@@ -1,9 +1,20 @@
-import { Hono } from 'hono'
+import { Hono } from "hono";
+import { testConnection } from "./db";
 
-const app = new Hono()
+import type { DatabaseError } from "pg";
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
+const app = new Hono();
 
-export default app
+testConnection()
+  .then(() => {
+    console.log("Database connected");
+  })
+  .catch((err: DatabaseError) => {
+    console.error("Database connection error:", err);
+  });
+
+app.get("/", (c) => {
+  return c.text("Hello Hono!");
+});
+
+export default app;
