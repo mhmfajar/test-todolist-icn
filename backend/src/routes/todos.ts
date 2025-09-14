@@ -1,15 +1,15 @@
-import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { and, eq, isNull } from "drizzle-orm";
+import { Hono } from "hono";
 import { z } from "zod";
 
+import { db, todos } from "@/db";
+import { authMiddleware } from "@/middlewares";
 import {
   TodoCreateSchema,
   TodoListQuerySchema,
   TodoUpdateSchema,
 } from "@/schemas";
-import { authMiddleware } from "@/middlewares";
-import { db, todos } from "@/db";
 
 import type { JWTPayload } from "@/types/jwt";
 
@@ -59,7 +59,6 @@ todosApp.post("/", zValidator("json", TodoCreateSchema), async (c) => {
     .values({
       userId,
       text: body.text,
-      createdBy: userId,
     })
     .returning();
 

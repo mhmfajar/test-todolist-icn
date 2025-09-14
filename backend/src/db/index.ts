@@ -1,6 +1,6 @@
+import config from "@/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import config from "@/config";
 import * as schema from "./schema";
 
 import type { DatabaseError } from "pg";

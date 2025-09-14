@@ -14,7 +14,7 @@ export const SoftDeleteQuerySchema = z.object({
 });
 
 export const ServerAudit = z.object({
-  createdBy: z.uuid(),
-  updatedBy: z.uuid().optional(),
-  deletedBy: z.uuid().optional(),
+  createdBy: z.string(),
+  updatedBy: z.string().optional(),
+  deletedBy: z.string().optional(),
 });

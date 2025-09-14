@@ -4,6 +4,7 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
+    "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-validator": "^0.7.2",
     "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.44.5",
