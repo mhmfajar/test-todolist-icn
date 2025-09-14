@@ -136,6 +136,35 @@ const openApiSpec = {
           deletedAt: { type: "string", nullable: true, format: "date-time" },
         },
       },
+      SuggestionRequest: {
+        type: "object",
+        properties: {
+          input: { type: "string", minLength: 1, example: "learn programming" },
+          count: {
+            type: "integer",
+            minimum: 1,
+            maximum: 5,
+            default: 3,
+            example: 3,
+          },
+        },
+        required: ["input"],
+      },
+      SuggestionResponse: {
+        type: "object",
+        properties: {
+          data: {
+            type: "array",
+            items: { type: "string" },
+            example: [
+              "Read React documentation",
+              "Practice LeetCode problems",
+              "Build a simple CRUD app",
+            ],
+          },
+        },
+        required: ["data"],
+      },
     },
   },
   paths: {
@@ -479,6 +508,57 @@ const openApiSpec = {
           },
           "401": {
             description: "Unauthorized",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    "/api/suggestions": {
+      post: {
+        tags: ["Suggestions"],
+        summary: "Generate task suggestions using OpenAI",
+        description: "Takes a topic and returns 1–5 suggested tasks.",
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SuggestionRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/SuggestionResponse" },
+              },
+            },
+          },
+          "400": {
+            description: "Validation error",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          "401": {
+            description: "Unauthorized",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          "500": {
+            description: "Internal error",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },

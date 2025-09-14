@@ -18,3 +18,10 @@ export const ServerAudit = z.object({
   updatedBy: z.string().optional(),
   deletedBy: z.string().optional(),
 });
+
+export const suggestionBodySchema = z.object({
+  input: z.string().min(1, "input is required"),
+  count: z.coerce.number().int().min(1).max(5).optional(),
+});
+
+export type SuggestionBody = z.infer<typeof suggestionBodySchema>;

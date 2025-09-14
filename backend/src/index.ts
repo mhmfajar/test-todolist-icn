@@ -1,5 +1,5 @@
 import { testConnection } from "@/db";
-import { authApp, todosApp, swaggerApp } from "@/routes";
+import { authApp, todosApp, swaggerApp, suggestionsApp } from "@/routes";
 import { Hono } from "hono";
 
 import type { DatabaseError } from "pg";
@@ -20,5 +20,6 @@ app.get("/", (c) => {
 app.route("/auth", authApp);
 app.route("/todos", todosApp);
 app.route("/swagger", swaggerApp);
+app.route("/api/suggestions", suggestionsApp);
 
 export default app;
