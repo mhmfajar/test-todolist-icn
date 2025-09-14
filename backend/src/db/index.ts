@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import config from "@/config";
 import * as schema from "./schema";
-import { Pool } from "pg";
 
 import type { DatabaseError } from "pg";
 
@@ -18,3 +18,5 @@ export const testConnection = (): Promise<boolean> => {
       .catch((err: DatabaseError) => reject(err));
   });
 };
+
+export * from "./schema";

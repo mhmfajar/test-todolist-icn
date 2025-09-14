@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { testConnection } from "./db";
+import { testConnection } from "@/db";
+import { authApp, todosApp } from "@/routes";
 
 import type { DatabaseError } from "pg";
 
@@ -14,7 +15,9 @@ testConnection()
   });
 
 app.get("/", (c) => {
-  return c.text("Hello Hono!");
+  return c.json({ message: "Welcome!" });
 });
+app.route("/auth", authApp);
+app.route("/todos", todosApp);
 
 export default app;
