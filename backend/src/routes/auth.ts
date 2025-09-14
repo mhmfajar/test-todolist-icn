@@ -6,6 +6,7 @@ import {
   responseInternalServerError,
   responseOk,
 } from "@/utils/response";
+import { handleZodValidationResult } from "@/utils/validate";
 import { zValidator } from "@hono/zod-validator";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -13,7 +14,6 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { sign } from "hono/jwt";
-import { ZodError } from "zod";
 
 import type { DatabaseError } from "pg";
 
@@ -21,21 +21,7 @@ export const authApp = new Hono();
 
 authApp.post(
   "/register",
-  zValidator("json", RegisterSchema, (result, c) => {
-    if (!result.success) {
-      const err = result.error as ZodError;
-      console.log(err);
-      return responseFail(
-        c,
-        err.issues.map((issue) => ({
-          path: issue.path.join("."),
-          message: issue.message,
-          code: issue.code,
-        })),
-        400
-      );
-    }
-  }),
+  zValidator("json", RegisterSchema, handleZodValidationResult),
   async (c) => {
     const { username, password } = c.req.valid("json");
 
@@ -57,62 +43,66 @@ authApp.post(
   }
 );
 
-authApp.post("/login", zValidator("json", LoginSchema), async (c) => {
-  const { username, password } = c.req.valid("json");
+authApp.post(
+  "/login",
+  zValidator("json", LoginSchema, handleZodValidationResult),
+  async (c) => {
+    const { username, password } = c.req.valid("json");
 
-  try {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
 
-    if (!user) return responseFail(c, "Invalid credentials", 401);
+      if (!user) return responseFail(c, "Invalid credentials", 401);
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) return responseFail(c, "Invalid credentials", 401);
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) return responseFail(c, "Invalid credentials", 401);
 
-    const now = Math.floor(Date.now() / 1000);
+      const now = Math.floor(Date.now() / 1000);
 
-    const accessExp = now + 60 * 15;
-    const accessToken = await sign(
-      {
-        sub: user.id,
-        username: user.username,
-        iss: "test-icn-todos",
-        iat: now,
-        exp: accessExp,
-      },
-      config.JWT_SECRET
-    );
+      const accessExp = now + 60 * 15;
+      const accessToken = await sign(
+        {
+          sub: user.id,
+          username: user.username,
+          iss: "test-icn-todos",
+          iat: now,
+          exp: accessExp,
+        },
+        config.JWT_SECRET
+      );
 
-    const refreshToken = crypto.randomUUID();
-    const refreshExp = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
+      const refreshToken = crypto.randomUUID();
+      const refreshExp = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
 
-    await db.insert(refreshTokens).values({
-      userId: user.id,
-      token: refreshToken,
-      expiresAt: refreshExp,
-    });
+      await db.insert(refreshTokens).values({
+        userId: user.id,
+        token: refreshToken,
+        expiresAt: refreshExp,
+      });
 
-    setCookie(c, "refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-      sameSite: "Strict",
-    });
+      setCookie(c, "refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "Strict",
+      });
 
-    return responseOk(c, {
-      accessToken,
-      tokenType: "Bearer",
-      expiresAt: accessExp,
-    });
-  } catch (e) {
-    console.error("Login error:", e);
-    return responseInternalServerError(c);
+      return responseOk(c, {
+        accessToken,
+        tokenType: "Bearer",
+        expiresAt: accessExp,
+      });
+    } catch (e) {
+      console.error("Login error:", e);
+      return responseInternalServerError(c);
+    }
   }
-});
+);
 
 authApp.post("/refresh", async (c) => {
   try {
