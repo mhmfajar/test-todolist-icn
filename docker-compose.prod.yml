@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:latest
+    image: postgres:alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -13,6 +13,13 @@ services:
       timeout: 3s
       retries: 20
       start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.30"
+          memory: 300M
+        reservations:
+          memory: 200M
     restart: unless-stopped
 
   backend:
@@ -32,6 +39,13 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.35"
+          memory: 300M
+        reservations:
+          memory: 150M
     restart: unless-stopped
 
   frontend:
@@ -51,6 +65,13 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.35"
+          memory: 300M
+        reservations:
+          memory: 150M
     restart: unless-stopped
 
 volumes:
