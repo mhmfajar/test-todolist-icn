@@ -20,6 +20,6 @@ app.get("/", (c) => {
 app.route("/auth", authApp);
 app.route("/todos", todosApp);
 app.route("/swagger", swaggerApp);
-app.route("/api/suggestions", suggestionsApp);
+app.route("/suggestions", suggestionsApp);
 
 export default app;

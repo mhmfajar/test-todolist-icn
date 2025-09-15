@@ -12,12 +12,17 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { JWTPayload } from "@/types/jwt";
+import {
+  responseFail,
+  responseInternalServerError,
+  responseOk,
+} from "@/utils/response";
 
 export const todosApp = new Hono();
 
 todosApp.use(authMiddleware);
 
-// list
+// LIST
 todosApp.get(
   "/",
   zValidator("query", TodoListQuerySchema, handleZodValidationResult),
@@ -54,51 +59,123 @@ todosApp.get(
   }
 );
 
-// create
+// CREATE
 todosApp.post(
   "/",
   zValidator("json", TodoCreateSchema, handleZodValidationResult),
   async (c) => {
     const { sub: userId }: JWTPayload = c.get("jwtPayload");
-    const body = c.req.valid("json");
-    const [row] = await db
-      .insert(todos)
-      .values({
-        userId,
-        text: body.text,
-      })
-      .returning();
+    const parsed = z.uuid().safeParse(userId);
+    if (!parsed.success) {
+      return responseFail(c, "Unauthorized", 401);
+    }
 
-    return c.json(row, 201);
+    try {
+      const body = c.req.valid("json");
+
+      const [row] = await db
+        .insert(todos)
+        .values({
+          userId: parsed.data,
+          text: body.text,
+        })
+        .returning();
+
+      return c.json(row, 201);
+    } catch (e) {
+      console.error("Create todo error:", e);
+      const code =
+        (e as { code?: string })?.code ??
+        (e as { cause?: { code?: string } })?.cause?.code;
+
+      if (code === "23503")
+        return responseFail(c, "Related record missing", 409);
+
+      return responseInternalServerError(c);
+    }
   }
 );
 
-// update
+// UPDATE
 todosApp.put(
   "/:id",
   zValidator("json", TodoUpdateSchema, handleZodValidationResult),
   async (c) => {
     const { sub: userId }: JWTPayload = c.get("jwtPayload");
+    const parsedUser = z.uuid().safeParse(userId);
+    if (!parsedUser.success) {
+      return responseFail(c, "Unauthorized", 401);
+    }
+
     const id = c.req.param("id");
-    const body = await c.req.json();
-    const [updated] = await db
-      .update(todos)
-      .set(body)
-      .where(and(eq(todos.id, id), eq(todos.userId, userId)))
-      .returning();
-    if (!updated) return c.json({ error: "Not found" }, 404);
-    return c.json(updated);
+    const parsedId = z.uuid().safeParse(id);
+    if (!parsedId.success) {
+      return responseFail(c, "Invalid todo id", 400);
+    }
+
+    try {
+      const body = c.req.valid("json");
+
+      const [updated] = await db
+        .update(todos)
+        .set(body)
+        .where(
+          and(eq(todos.id, parsedId.data), eq(todos.userId, parsedUser.data))
+        )
+        .returning();
+
+      if (!updated) return responseFail(c, "Not found", 404);
+      return responseOk(c, updated);
+    } catch (e) {
+      console.error("Update todo error:", e);
+      const code =
+        (e as { code?: string })?.code ??
+        (e as { cause?: { code?: string } })?.cause?.code;
+
+      if (code === "22P02") return responseFail(c, "Invalid input syntax", 400);
+      if (code === "23503")
+        return responseFail(c, "Related record missing", 409);
+      if (code === "23505") return responseFail(c, "Conflict", 409);
+
+      return responseInternalServerError(c);
+    }
   }
 );
 
-// delete
+// DELETE
 todosApp.delete("/:id", async (c) => {
   const { sub: userId }: JWTPayload = c.get("jwtPayload");
+  const parsedUser = z.uuid().safeParse(userId);
+  if (!parsedUser.success) {
+    return responseFail(c, "Unauthorized", 401);
+  }
+
   const id = c.req.param("id");
-  const [deletedRow] = await db
-    .delete(todos)
-    .where(and(eq(todos.id, id), eq(todos.userId, userId)))
-    .returning();
-  if (!deletedRow) return c.json({ error: "Not found" }, 404);
-  return c.json({ success: true });
+  const parsedId = z.uuid().safeParse(id);
+  if (!parsedId.success) {
+    return responseFail(c, "Invalid todo id", 400);
+  }
+
+  try {
+    const [deletedRow] = await db
+      .delete(todos)
+      .where(
+        and(eq(todos.id, parsedId.data), eq(todos.userId, parsedUser.data))
+      )
+      .returning();
+
+    if (!deletedRow) return responseFail(c, "Not found", 404);
+    return responseOk(c, { success: true });
+  } catch (e) {
+    console.error("Delete todo error:", e);
+    const code =
+      (e as { code?: string })?.code ??
+      (e as { cause?: { code?: string } })?.cause?.code;
+
+    if (code === "22P02") return responseFail(c, "Invalid input syntax", 400);
+    if (code === "23503")
+      return responseFail(c, "Cannot delete due to reference", 409);
+
+    return responseInternalServerError(c);
+  }
 });

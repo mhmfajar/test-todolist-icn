@@ -1,6 +1,7 @@
 // src/docs.ts
 import { Hono } from "hono";
 import { swaggerUI } from "@hono/swagger-ui";
+import config from "@/config";
 
 export const swaggerApp = new Hono();
 
@@ -572,4 +573,9 @@ const openApiSpec = {
 };
 
 swaggerApp.get("/doc", (c) => c.json(openApiSpec));
-swaggerApp.get("/", swaggerUI({ url: "/swagger/doc" }));
+swaggerApp.get(
+  "/",
+  swaggerUI({
+    url: config.NODE_ENV === "production" ? "/api/swagger/doc" : "/swagger/doc",
+  })
+);
