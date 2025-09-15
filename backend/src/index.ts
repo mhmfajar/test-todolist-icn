@@ -23,6 +23,4 @@ app.route("/todos", todosApp);
 app.route("/swagger", swaggerApp);
 app.route("/suggestions", suggestionsApp);
 
-app.get("/env", (c) => c.json(config));
-
 export default app;
