@@ -141,14 +141,13 @@ docker exec -it <container_name> sh
 
 ## 6) Database Setup (first time)
 
-Once containers are up, run migrations/seeds inside backend:
+Once containers are up, run migrations inside backend:
 
 ```bash
 docker exec -it <backend-container> bun run drizzle:push
-docker exec -it <backend-container> bun run drizzle:seed
 ```
 
-(Adjust to your actual migration/seeding commands.)
+(Adjust to your actual migration commands.)
 
 ---
 

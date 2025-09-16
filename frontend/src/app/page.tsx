@@ -1,3 +1,5 @@
+"use client";
+
 import TodoList from "@/components/todos/TodoList";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { useAuthStore } from "@/stores/auth";
