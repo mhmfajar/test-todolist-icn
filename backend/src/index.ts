@@ -1,11 +1,22 @@
 import { testConnection } from "@/db";
 import { authApp, todosApp, swaggerApp, suggestionsApp } from "@/routes";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import type { DatabaseError } from "pg";
-import config from "./config";
 
 const app = new Hono();
+
+// Allow CORS for all routes
+app.use(
+  "/*",
+  cors({
+    origin: "http://localhost:3000", // frontend origin
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // if you want cookies
+  })
+);
 
 testConnection()
   .then(() => {
